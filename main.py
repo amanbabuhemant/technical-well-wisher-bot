@@ -1,16 +1,16 @@
-
 from dotenv import load_dotenv
+from datetime import datetime
 from datetime import date
 import asyncio
 import tracemalloc
-
 import discord
 import os 
 load_dotenv()
 tracemalloc.start()
+
+
 intents = discord.Intents.default()
 intents.message_content = True
-
 client = discord.Client(intents=intents)
 
 
@@ -36,9 +36,18 @@ async def on_connect():
     await asyncio.sleep(5)
     channel = client.get_channel(1532599339614994444)
     print(channel)
-    await channel.send("Jio Shadow")
+    await wish(channel)
+    # await channel.send("Chipa Barero")
 
-
+async def wish(channel):
+    
+    today = datetime.now()    
+    today = str(today.strftime("%m-%d"))
+    if today == "11-03":
+        print("Artizote Birthday")
+        await channel.send("Artizote Birthday")
+    
+     
 
 
 
