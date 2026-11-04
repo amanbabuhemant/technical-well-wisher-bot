@@ -8,13 +8,13 @@ import os
 load_dotenv()
 tracemalloc.start()
 
-
+# Create instance of Client
 intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
 
 
-
+# on ready start event of warnings and error
 @client.event
 async def on_ready():
     print(f'We have logged in as {client.user}')
@@ -24,12 +24,7 @@ async def on_ready():
 async def on_message(message):
     if message.author == client.user:
         return
-    
-    # if message.content.startswith('Birthday'):
-    #     print(message)
-    #     print(client.get_channel(1532599339614994444))
-        
-
+# main on connect event 
 @client.event 
 async def on_connect():
 
@@ -37,32 +32,15 @@ async def on_connect():
     channel = client.get_channel(1532599339614994444)
     print(channel)
     await wish(channel)
-    # await channel.send("Chipa Barero")
 
-async def wish(channel):
-    
+# recursive function of checking date for wishes
+async def wish(channel): 
     today = datetime.now()    
     today = str(today.strftime("%m-%d"))
-    if today == "11-03":
+    if today == "11-04":
         print("Artizote Birthday")
-        await channel.send("Artizote Birthday")
-    
-     
-
-
-
-# await message.channel.send('Happy Birthday ')
-# async def on_timing():
-#   await asyncio.sleep(10)  
-#   print(date.today())
-
-# async def main():
-#     result = await on_timing()
-#     if result == "2026-11-02":
-#         channel.send('Arti hogya')
-#         print('done')
-#     print(channel)
-        
+        await channel.send("@ghostor._. kya nakli id banaty ho drift")
+         
 client.run(os.getenv("TOKEN"))
    
 
