@@ -1,11 +1,20 @@
-from dotenv import load_dotenv
 from datetime import datetime
-from datetime import date
 import asyncio
 import tracemalloc
 import discord
-import os 
-load_dotenv()
+
+from env import *
+
+
+if not TOKEN:
+    print("Set TOKEN environment varibale")
+    exit(1)
+
+if not CHANNEL_ID:
+    print("Please set CHANNEL_ID environment varibale")
+    exit(1)
+
+
 tracemalloc.start()
 
 # Create instance of Client
@@ -29,8 +38,7 @@ async def on_message(message):
 async def on_connect():
 
     await asyncio.sleep(5)
-    channel = client.get_channel(1532599339614994444)
-    print(channel)
+    channel = client.get_channel(CHANNEL_ID)
     await wish(channel)
 
 # recursive function of checking date for wishes
@@ -41,11 +49,5 @@ async def wish(channel):
         print("Artizote Birthday")
         await channel.send("@ghostor._. kya nakli id banaty ho drift")
          
-client.run(os.getenv("TOKEN"))
+client.run(TOKEN)
    
-
-
-
-
-
-
