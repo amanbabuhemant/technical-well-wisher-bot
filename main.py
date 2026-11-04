@@ -2,13 +2,16 @@ from datetime import datetime
 import asyncio
 import tracemalloc
 import discord
-import os 
 
 from env import *
 
 
 if not TOKEN:
     print("Set TOKEN environment varibale")
+    exit(1)
+
+if not CHANNEL_ID:
+    print("Please set CHANNEL_ID environment varibale")
     exit(1)
 
 
@@ -35,8 +38,7 @@ async def on_message(message):
 async def on_connect():
 
     await asyncio.sleep(5)
-    channel = client.get_channel(1532599339614994444)
-    print(channel)
+    channel = client.get_channel(CHANNEL_ID)
     await wish(channel)
 
 # recursive function of checking date for wishes
