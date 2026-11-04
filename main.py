@@ -1,11 +1,17 @@
-from dotenv import load_dotenv
 from datetime import datetime
-from datetime import date
 import asyncio
 import tracemalloc
 import discord
 import os 
-load_dotenv()
+
+from env import *
+
+
+if not TOKEN:
+    print("Set TOKEN environment varibale")
+    exit(1)
+
+
 tracemalloc.start()
 
 # Create instance of Client
@@ -41,11 +47,5 @@ async def wish(channel):
         print("Artizote Birthday")
         await channel.send("@ghostor._. kya nakli id banaty ho drift")
          
-client.run(os.getenv("TOKEN"))
+client.run(TOKEN)
    
-
-
-
-
-
-
