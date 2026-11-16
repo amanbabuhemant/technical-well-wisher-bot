@@ -1,21 +1,21 @@
 from sqlalchemy import create_engine, Column, Integer, String, DateTime,func
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import DeclarativeBase, mapped_column
 
 
 
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
 
 
 class User(Base):
     __tablename__ = 'users'
 
 
-    id = Column(Integer, primary_key=True)
-    full_name = Column(String(255), nullable=False)
-    date_of_birth = Column(String(5))
-    created_at = Column(DateTime, default=func.now())
-    updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+    id = mapped_column(Integer, primary_key=True)
+    full_name = mapped_column(String(255), nullable=False)
+    date_of_birth = mapped_column(String(5))
+    created_at = mapped_column(DateTime, default=func.now())
+    updated_at = mapped_column(DateTime, default=func.now(), onupdate=func.now())
 
 
     def __repr__(self):

@@ -1,14 +1,14 @@
-from sqlalchemy import create_engine, engine
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import Session
 from datetime import datetime
 import asyncio
 import tracemalloc
 import discord
 from discord import Message
 from discord.ext import commands
-
 from env import *
-
+from database.models.user import User
+from database.models import engine
+ 
 
 if not TOKEN:
     print("Set TOKEN environment varibale")
@@ -29,32 +29,21 @@ intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
 
+#CRUD OPERATION commands
+session = Session(engine)
 
-# Command Dipatcher
-COMMANDS = {}
-def command(func, command: str | None = None):
-    command = command or func.__name__
-    COMMANDS[command] = func
-async def dispatch_command(ctx, content):
-    command, args = content[1:].split(" ")
-    callback = COMMANDS.get(command)
-    if not callback: return
-    await callback(ctx, *args)
-# End of Command Dispatcher
+# add birthday
+bot = commands.Bot(command_prefix='$', intents=intents)
 
+@bot.hybrid_command()
+async def add(ctx, date, full_name):
+    await ctx.send("adding birthday")
+    new_user = User(full_name=full_name, date_of_birth=date)
+    session.add(new_user)
+    session.commit()
 
-@command
-async def test(ctx, *args):
-    arguments = ', '.join(args)
-    await ctx.send(f'{len(args)} arguments: {arguments}')
+    
 
-
-# Command Handler
-@client.event
-async def on_message(message: Message):
-    content = message.content
-    if content.startswith("$"):
-        await dispatch_command(message.channel, content)
 
 
 # on ready start event of warnings and error
@@ -82,7 +71,9 @@ async def wish(channel):
         await channel.send("@ghostor._. kya nakli id banaty ho drift")
 
 
-# bot.add_command(test)
+# run bot and client
+
+bot.run(TOKEN)
 
 client.run(TOKEN)
    
