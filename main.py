@@ -8,7 +8,7 @@ from discord.ext import commands
 from env import *
 from database.models.user import User
 from database.models import engine
- 
+import re 
 
 if not TOKEN:
     print("Set TOKEN environment varibale")
@@ -22,12 +22,41 @@ if not CHANNEL_ID:
 tracemalloc.start()
 
 
-# engine = create_engine('sqlite://database/bot.db')
+
+
 
 # Create instance of Client
 intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
+
+#Date Validation
+async def sanitize_date(date, ctx):
+    
+    try:
+        date = str(date).replace('"','').replace("'","")
+        #for handling Leap and non-leap Year
+        date_with_year = f"2004-{date}"
+        sanitize_date = datetime.strptime(date_with_year, "%Y-%m-%d")
+        return sanitize_date.strftime("%m-%d")
+
+    except ValueError:
+        
+        await ctx.send("Invalid Date")
+    
+
+    
+
+#Full_name Validation 
+async def sanitize_full_name(full_name, ctx):
+    full_name = str(full_name).replace('"','').replace("'","")
+    pattern = "^[a-zA-Z]{3,}(?: [a-zA-Z]+){0,2}$"
+    if re.match(pattern, full_name):
+        return full_name
+    else:
+        await ctx.send("Please Write your Full_name Correctly.")
+
+
 
 #CRUD OPERATION commands
 session = Session(engine)
@@ -36,13 +65,25 @@ session = Session(engine)
 bot = commands.Bot(command_prefix='$', intents=intents)
 
 @bot.hybrid_command()
-async def add(ctx, date, full_name):
-    await ctx.send("adding birthday")
-    new_user = User(full_name=full_name, date_of_birth=date)
-    session.add(new_user)
-    session.commit()
+async def add(ctx, date=None, *, full_name: str):
+        try:     
+            await ctx.send("adding birthday")
+                
+            sanitize_name = await sanitize_full_name(full_name, ctx)
+            sanitize_dt = await sanitize_date(date, ctx)
+            if sanitize_name and sanitize_dt:
+                print(sanitize_name)
+                await ctx.send(f"date: {date} , full_name: {full_name}") 
+                new_user = User(full_name=full_name, date_of_birth=date)
+                session.add(new_user)
+                session.commit()
+        except ValueError:
+            await ctx.send("Write Date and full Name Correctly")
 
-    
+
+@bot.hybrid_command()
+async def fetch(ctx):
+    await ctx.send(session.query(User).all())
 
 
 

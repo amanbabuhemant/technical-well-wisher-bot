@@ -1,3 +1,5 @@
 __pycache__
 venv
 .env
+/database/bot.db
+bot.db
