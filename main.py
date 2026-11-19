@@ -49,10 +49,10 @@ async def sanitize_date(date, ctx):
 
 #Full_name Validation 
 async def sanitize_full_name(full_name, ctx):
-    full_name = str(full_name).replace('"','').replace("'","")
+    s_full_name =  str(full_name).replace("'","").replace('"','')
     pattern = "^[a-zA-Z]{3,}(?: [a-zA-Z]+){0,2}$"
-    if re.match(pattern, full_name):
-        return full_name
+    if re.match(pattern, s_full_name):
+        return s_full_name
     else:
         await ctx.send("Please Write your Full_name Correctly.")
 
@@ -73,18 +73,43 @@ async def add(ctx, date=None, *, full_name: str):
             sanitize_dt = await sanitize_date(date, ctx)
             if sanitize_name and sanitize_dt:
                 print(sanitize_name)
-                await ctx.send(f"date: {date} , full_name: {full_name}") 
-                new_user = User(full_name=full_name, date_of_birth=date)
+                await ctx.send(f"date: {date} , full_name: {sanitize_name}") 
+                new_user = User(full_name=sanitize_name, date_of_birth=date)
                 session.add(new_user)
                 session.commit()
         except ValueError:
             await ctx.send("Write Date and full Name Correctly")
 
-
+#fetch birthday
 @bot.hybrid_command()
 async def fetch(ctx):
-    await ctx.send(session.query(User).all())
+    await ctx.send(f"""```json
+{session.query(User).all()}```""")
 
+
+#get user 
+@bot.hybrid_command()
+async def find(ctx:commands.Context,*, arg: str):
+    
+    sanitize_arg = str(arg).replace("'","").replace('"','')
+    date_pattern = "^[0-9]{2}-[0-9]{2}"
+    full_name_pattern = "^[a-zA-Z]{3,}(?: [a-zA-Z]+){0,2}$" 
+    
+    if re.match(date_pattern,sanitize_arg):
+        
+        users = session.query(User).filter_by(date_of_birth=sanitize_arg).all()
+        await ctx.send(f"""```json
+{str(users)}```""")
+    
+    elif re.match(full_name_pattern,sanitize_arg):
+        await ctx.send(sanitize_arg)
+        users = session.query(User).filter_by(full_name=sanitize_arg).all()
+        await ctx.send(f"""```json
+{str(users)}```""")
+    else:
+        await ctx.send("Wrong argument couldn't find anyone")
+
+#update User
 
 
 # on ready start event of warnings and error
