@@ -30,4 +30,18 @@ class User(Base):
 
         return json.dumps(d, indent=2)
 
-        
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "full_name": self.full_name,
+            "date_of_birth": self.date_of_birth,
+            "created_at": str(self.created_at) ,
+            "updated_at": str(self.updated_at)
+        }
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), indent=2)
+
+    def to_json_snippet(self):
+        return f"```json\n{self.to_json()}\n```"
+
