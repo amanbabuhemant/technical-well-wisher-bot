@@ -1,3 +1,5 @@
+from string import ascii_lowercase, ascii_uppercase
+
 
 MONTH_MAP = {
     # 0: (shortname, fullname, maxdaycount)
@@ -56,4 +58,38 @@ def sanitize_date(date_input: str) -> str | None:
 
     return f"{str(month).zfill(2)}-{str(day).zfill(2)}"
 
+
+def sanitize_name(name_input: str) -> str | None:
+    """
+    Validate and Sanatize name
+    name should be:
+        1 to 4 word long
+        word can only contents alphabates
+        word can't be shorten then 3 letters
+        at most 255 characters
+    """
+
+    name_input = name_input.replace("\'", "")
+    name_input = name_input.replace("\"", "")
+    name_input = name_input.strip()
+    while "  " in name_input:
+        name_input = name_input.replace("  ", " ")
+
+    words = name_input.split(" ")
+    if not 4 >= len(words) >= 1:
+        return None
+
+    allowed_ascii = set(ascii_lowercase + ascii_uppercase)
+    for word in words:
+        if len(word) < 3:
+            return None
+        if not set(word) <= allowed_ascii:
+            return None
+
+    name = " ".join(words)
+    if len(name) > 255:
+        return None
+
+    print("len:", len(name))
+    return name
 

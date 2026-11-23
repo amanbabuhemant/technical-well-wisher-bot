@@ -9,7 +9,7 @@ from env import *
 from database.models.user import User
 from database.models import engine
 from utils import *
-import re 
+
 
 if not TOKEN:
     print("Set TOKEN environment varibale")
@@ -28,19 +28,7 @@ intents.message_content = True
 client = discord.Client(intents=intents)
 
 
-#Sanitization
-full_name_pattern = "^[a-zA-Z]{3,}(?: [a-zA-Z]+){0,2}$"
-
     
-
-#Full_name Validation 
-async def sanitize_full_name(full_name, ctx,name_pattern = full_name_pattern):
-    s_full_name =  str(full_name).replace("'","").replace('"','')
-    if re.match(name_pattern, s_full_name):
-        return s_full_name
-    else:
-        await ctx.send("Please Write your Full_name Correctly.")
-
 
 #id Validation
 
@@ -60,21 +48,25 @@ session = Session(engine)
 bot = commands.Bot(command_prefix='$', intents=intents)
 
 @bot.hybrid_command()
-async def add(ctx, date="", *, full_name: str):
+async def add(ctx, date: str = "", full_name: str = ""):
         try:     
-            sanitize_name = await sanitize_full_name(full_name, ctx)
+            sanitized_name = sanitize_name(full_name)
             sanitized_date = sanitize_date(date)
+
             if not sanitized_date:
                 await ctx.send("Write Date in Correct Format MM-DD")
                 return
 
-            if sanitize_name and sanitized_date:
-                print(sanitize_name)
-                await ctx.send(f"date: {sanitized_date} , full_name: {sanitize_name}") 
-                new_user = User(full_name=sanitize_name, date_of_birth=sanitized_date)
+            if not sanitized_name:
+                await ctx.send("Enter name correctly.")
+                return
+
+            if sanitized_name and sanitized_date:
+                await ctx.send(f"date: {sanitized_date} , full_name: {sanitized_name}") 
+                new_user = User(full_name=sanitized_name, date_of_birth=sanitized_date)
                 session.add(new_user)
                 session.commit()
-        except ValueError:
+        except:
             await ctx.send("Write Date and full Name Correctly")
 
 #fetch birthday
@@ -87,27 +79,26 @@ async def fetch(ctx):
 #get user 
 @bot.hybrid_command()
 async def find(ctx:commands.Context, arg: str):
-    
-    sanitize_arg = str(arg).replace("'","").replace('"','') 
-    if sanitized_date := sanitize_date(sanitize_arg):
+
+    if sanitized_date := sanitize_date(arg):
         users = session.query(User).filter_by(date_of_birth =sanitized_date).all()
         await ctx.send(f"""```json
 {str(users)}```""")
     
-    elif re.match(full_name_pattern ,sanitize_arg):
-        users = session.query(User).filter_by(full_name=sanitize_arg).all()
+    elif sanitized_name := sanitize_name(arg):
+        users = session.query(User).filter_by(full_name=sanitized_name).all()
         await ctx.send(f"""```json
 {str(users)}```""")
+
     else:
         await ctx.send("Wrong argument couldn't find anyone.")
+
 #Update User
 
 @bot.hybrid_command()
 async def update(ctx:commands.Context,id:str , *, arg:str):
     
     s_id = await sanitize_id(id, ctx)
-
-    sanitize_arg = str(arg).replace("'","").replace('"','')
     
     user = session.query(User).filter_by(id=s_id).first()
     
@@ -115,14 +106,13 @@ async def update(ctx:commands.Context,id:str , *, arg:str):
         await ctx.send("Record not found with this ID.")
         return
     
-    if sanitized_date := sanitize_date(sanitize_arg):
+    if sanitized_date := sanitize_date(arg):
         user.date_of_birth = sanitized_date
         session.commit()
         await ctx.send("Updated User Info successfully.")
 
-    elif re.match(full_name_pattern, sanitize_arg):
-        user = session.query(User).filter_by(id=s_id).first()
-        user.full_name = sanitize_arg
+    elif sanitized_name := sanitize_name(arg):
+        user.full_name = sanitized_name
         session.commit()
         await ctx.send("Updated User Info successfully.")
 
