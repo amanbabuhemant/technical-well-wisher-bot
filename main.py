@@ -1,13 +1,11 @@
 from sqlalchemy.orm import Session
-from datetime import datetime
-import asyncio
 import tracemalloc
 import discord
-from discord import Message
 from discord.ext import commands
 from env import *
 from database.models.user import User
 from database.models import engine
+from time import sleep
 from utils import *
 
 
@@ -27,26 +25,14 @@ intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
 
+session = Session(engine)
 
-    
-
-#id Validation
-
-async def sanitize_id(id,ctx):
-    try:
-        s_id = int(id)
-        if s_id:
-            return s_id
-    except:
-        await ctx.send("Enter correct id")
+bot = commands.Bot(command_prefix='$', intents=intents)
 
 
 #CRUD OPERATION commands
-session = Session(engine)
 
 # add birthday
-bot = commands.Bot(command_prefix='$', intents=intents)
-
 @bot.hybrid_command()
 async def add(ctx, date: str = "", full_name: str = ""):
         try:     
@@ -69,11 +55,14 @@ async def add(ctx, date: str = "", full_name: str = ""):
         except:
             await ctx.send("Write Date and full Name Correctly")
 
+
 #fetch birthday
 @bot.hybrid_command()
 async def fetch(ctx):
-    await ctx.send(f"""```json
-{session.query(User).all()}```""")
+    users = session.query(User).all()
+    for user in users:
+        sleep(0.1)
+        await ctx.send(user.to_json_snippet())
 
 
 #get user 
@@ -82,23 +71,32 @@ async def find(ctx:commands.Context, arg: str):
 
     if sanitized_date := sanitize_date(arg):
         users = session.query(User).filter_by(date_of_birth =sanitized_date).all()
-        await ctx.send(f"""```json
-{str(users)}```""")
+        users = session.query(User).all()
+        for user in users:
+            sleep(0.1)
+            await ctx.send(user.to_json_snippet())
     
     elif sanitized_name := sanitize_name(arg):
         users = session.query(User).filter_by(full_name=sanitized_name).all()
-        await ctx.send(f"""```json
-{str(users)}```""")
+        users = session.query(User).filter_by(date_of_birth =sanitized_date).all()
+        users = session.query(User).all()
+        for user in users:
+            sleep(0.1)
+            await ctx.send(user.to_json_snippet())
 
     else:
         await ctx.send("Wrong argument couldn't find anyone.")
 
-#Update User
 
+#Update User
 @bot.hybrid_command()
 async def update(ctx:commands.Context,id:str , *, arg:str):
     
-    s_id = await sanitize_id(id, ctx)
+    s_id = sanitize_id(id)
+
+    if not s_id:
+        await ctx.send("ID is not valid.")
+        return
     
     user = session.query(User).filter_by(id=s_id).first()
     
@@ -121,12 +119,11 @@ async def update(ctx:commands.Context,id:str , *, arg:str):
 
 
 #delete User
-
 @bot.hybrid_command()
 async def delete(ctx:commands.Context,id: str):
     
 
-    s_id = await sanitize_id(id, ctx)
+    s_id = sanitize_id(id)
     user = session.query(User).filter_by(id=s_id).first() if s_id else False
     if user:
         session.delete(user)
@@ -135,29 +132,13 @@ async def delete(ctx:commands.Context,id: str):
     else:
         await ctx.send(f" Wrong No User found")
 
+
 # on ready start event of warnings and error
 
 @client.event
 async def on_ready():
     print(f'We have logged in as {client.user}')
 
-
-
-# main on connect event 
-@client.event 
-async def on_connect():
-
-    await asyncio.sleep(5)
-    channel = client.get_channel(CHANNEL_ID)
-    await wish(channel)
-
-# recursive function of checking date for wishes
-async def wish(channel): 
-    today = datetime.now()    
-    today = str(today.strftime("%m-%d"))
-    if today == "11-05":
-        print("Artizote Birthday")
-        await channel.send("@ghostor._. kya nakli id banaty ho drift")
 
 
 # run bot and client

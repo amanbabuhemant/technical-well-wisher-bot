@@ -93,3 +93,9 @@ def sanitize_name(name_input: str) -> str | None:
     print("len:", len(name))
     return name
 
+
+def sanitize_id(id_input: str) -> int | None:
+    if not id_input.isnumeric():
+        return None
+    return int(id_input)
+
