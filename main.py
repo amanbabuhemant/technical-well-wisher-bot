@@ -8,6 +8,7 @@ from discord.ext import commands
 from env import *
 from database.models.user import User
 from database.models import engine
+from utils import *
 import re 
 
 if not TOKEN:
@@ -28,28 +29,7 @@ client = discord.Client(intents=intents)
 
 
 #Sanitization
-date_pattern = "^[0-9]{2}-[0-9]{2}"
 full_name_pattern = "^[a-zA-Z]{3,}(?: [a-zA-Z]+){0,2}$"
-
-
-#Date Validation
-async def sanitize_date(date, ctx,dt_pattern=date_pattern):
-    
-    try:
-        date = str(date).replace('"','').replace("'","")
-        #for handling Leap and non-leap Year
-
-        if re.match(dt_pattern, date):
-            date_with_year = f"2004-{date}"
-            sanitize_date = datetime.strptime(date_with_year, "%Y-%m-%d")
-            return sanitize_date.strftime("%m-%d")
-        else:
-            await ctx.send("Write Date in Correct Format MM-DD")
-
-    except ValueError:
-        
-        await ctx.send("Write Date in Correct Format MM-DD")
-    
 
     
 
@@ -80,15 +60,18 @@ session = Session(engine)
 bot = commands.Bot(command_prefix='$', intents=intents)
 
 @bot.hybrid_command()
-async def add(ctx, date=None, *, full_name: str):
+async def add(ctx, date="", *, full_name: str):
         try:     
-                
             sanitize_name = await sanitize_full_name(full_name, ctx)
-            sanitize_dt = await sanitize_date(date, ctx)
-            if sanitize_name and sanitize_dt:
+            sanitized_date = sanitize_date(date)
+            if not sanitized_date:
+                await ctx.send("Write Date in Correct Format MM-DD")
+                return
+
+            if sanitize_name and sanitized_date:
                 print(sanitize_name)
-                await ctx.send(f"date: {sanitize_dt} , full_name: {sanitize_name}") 
-                new_user = User(full_name=sanitize_name, date_of_birth=date)
+                await ctx.send(f"date: {sanitized_date} , full_name: {sanitize_name}") 
+                new_user = User(full_name=sanitize_name, date_of_birth=sanitized_date)
                 session.add(new_user)
                 session.commit()
         except ValueError:
@@ -103,16 +86,15 @@ async def fetch(ctx):
 
 #get user 
 @bot.hybrid_command()
-async def find(ctx:commands.Context,dt_pattern = date_pattern,f_name_pattern = full_name_pattern,*, arg: str):
+async def find(ctx:commands.Context, arg: str):
     
     sanitize_arg = str(arg).replace("'","").replace('"','') 
-    if re.match(dt_pattern,sanitize_arg):
-        
-        users = session.query(User).filter_by(date_of_birth =sanitize_arg).all()
+    if sanitized_date := sanitize_date(sanitize_arg):
+        users = session.query(User).filter_by(date_of_birth =sanitized_date).all()
         await ctx.send(f"""```json
 {str(users)}```""")
     
-    elif re.match(f_name_pattern,sanitize_arg):
+    elif re.match(full_name_pattern ,sanitize_arg):
         users = session.query(User).filter_by(full_name=sanitize_arg).all()
         await ctx.send(f"""```json
 {str(users)}```""")
@@ -121,7 +103,7 @@ async def find(ctx:commands.Context,dt_pattern = date_pattern,f_name_pattern = f
 #Update User
 
 @bot.hybrid_command()
-async def update(ctx:commands.Context,id:str , *, arg:str , dt_pattern = date_pattern , f_name_pattern = full_name_pattern):
+async def update(ctx:commands.Context,id:str , *, arg:str):
     
     s_id = await sanitize_id(id, ctx)
 
@@ -129,13 +111,16 @@ async def update(ctx:commands.Context,id:str , *, arg:str , dt_pattern = date_pa
     
     user = session.query(User).filter_by(id=s_id).first()
     
-    if re.match(dt_pattern, sanitize_arg):
-        user.date_of_birth = sanitize_arg
+    if not user:
+        await ctx.send("Record not found with this ID.")
+        return
+    
+    if sanitized_date := sanitize_date(sanitize_arg):
+        user.date_of_birth = sanitized_date
         session.commit()
         await ctx.send("Updated User Info successfully.")
 
-
-    elif re.match(f_name_pattern,sanitize_arg):
+    elif re.match(full_name_pattern, sanitize_arg):
         user = session.query(User).filter_by(id=s_id).first()
         user.full_name = sanitize_arg
         session.commit()
