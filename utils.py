@@ -1,5 +1,14 @@
-from string import ascii_lowercase, ascii_uppercase
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+from requests import post
 
+from string import ascii_lowercase, ascii_uppercase
+from random import randint
+from pathlib import Path
+
+
+JINJA_ENV = Environment(loader=FileSystemLoader("templates"), autoescape=select_autoescape())
+
+HTMLIFY_API_BASE = "https://api.htmlify.me/v1"
 
 MONTH_MAP = {
     # 0: (shortname, fullname, maxdaycount)
@@ -106,4 +115,41 @@ def sanitize_id(id_input: str) -> int | None:
     if not id_input.isnumeric():
         return None
     return int(id_input)
+
+
+def render_template(template_name: str, **kwargs) -> str:
+    """Render template, return rendered template as string"""
+    template = JINJA_ENV.get_template(template_name)
+    return template.render(**kwargs)
+
+
+def generate_template(template_name: str, **kwargs) -> Path:
+    """Generate template in a file and return file's path"""
+    rendered_template = render_template(template_name, **kwargs)
+    rfile_path = Path("generated").joinpath(str(randint(10**9,10**10-1))+"."+template_name)
+    with open(rfile_path, "w") as f:
+        f.write(rendered_template)
+    return rfile_path
+
+
+def htmlify_tmpfile(filepath: str | Path) -> str:
+    """Uploads file on `filepath` to HTMLify as temp file, returns public url"""
+
+    tmpfile_api_endpoint = HTMLIFY_API_BASE + "/tmpfiles"
+
+    filepath = Path(filepath)
+    if not filepath.exists():
+        raise FileNotFoundError()
+
+    file = open(filepath, "rb")
+    payload = {
+        'name': file.name,
+    }
+    files = {"file": (file.name, file)}
+
+    try:
+        r = post(tmpfile_api_endpoint, data=payload, files=files)
+        return r.json()["url"]
+    except:
+        return ""
 

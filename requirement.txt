@@ -2,3 +2,4 @@ sqlalchemy
 discord
 dotenv
 requests
+jinja2
