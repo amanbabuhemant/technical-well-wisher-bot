@@ -7,7 +7,8 @@ from database.models.user import User
 from database.models import engine
 from time import sleep
 from utils import *
-
+import io
+import requests
 
 if not TOKEN:
     print("Set TOKEN environment varibale")
@@ -34,7 +35,7 @@ bot = commands.Bot(command_prefix='$', intents=intents)
 
 # add birthday
 @bot.hybrid_command()
-async def add(ctx, date: str = "", full_name: str = ""):
+async def add(ctx, date: str = "",*, full_name: str = ""):
         try:     
             sanitized_name = sanitize_name(full_name)
             sanitized_date = sanitize_date(date)
@@ -60,10 +61,62 @@ async def add(ctx, date: str = "", full_name: str = ""):
 @bot.hybrid_command()
 async def fetch(ctx):
     users = session.query(User).all()
-    for user in users:
-        sleep(0.1)
-        await ctx.send(user.to_json_snippet())
 
+    rows_html = ""
+    for user in users:
+        rows_html += f"""
+        <tr class="border-b border-gray-200 hover:bg-gray-50">
+            <td class="py-3 px-6 text-left">{user.id}</td>
+            <td class="py-3 px-6 text-left font-medium">{user.full_name}</td>
+            <td class="py-3 px-6 text-left">{user.date_of_birth}</td>
+        </tr>
+        """
+        
+        html_content = f"""<html>
+                <head>
+                    <script src="https://cdn.tailwindcss.com"></script>
+                </head>
+                    <body>
+                <div class="max-w-4xl mx-auto bg-white shadow-md rounded-lg overflow-hidden">
+        <div class="px-6 py-4 bg-gray-800 text-white">
+            <h1 class="text-xl font-bold">Birthday List</h1>
+        </div>
+        <table class="min-w-full leading-normal">
+            <thead>
+                <tr class="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+                    <th class="py-3 px-6 text-left">ID</th>
+                    <th class="py-3 px-6 text-left">Name</th>
+                    <th class="py-3 px-6 text-left">Birthday</th>
+                </tr>
+            </thead>
+            <tbody class="text-gray-700 text-sm">
+                {rows_html}
+            </tbody>
+        </table>
+    </div>
+                </body>
+                </html> """
+        
+    filename = "fetch.html"
+    with open(filename, "w", encoding = "utf-8") as f:
+                f.write(html_content)
+
+    
+    url = 'https://api.htmlify.me/v1/tmpfiles'
+    payload = { 'name': filename, 'expiry': 100000  }
+    
+    with open(filename, "rb") as f:
+         files = {"file": (filename, f, 'text/html')}
+         print(f)
+         r = requests.post(url, data=payload, files=files)
+
+    # print(files)
+    # sleep(0.6)
+
+    data = r.json()
+    link = data.get("url")
+    await ctx.send(link)
+    # await ctx.send("Here is the exported birthday table:", file=discord_file)
 
 #get user 
 @bot.hybrid_command()
@@ -134,7 +187,6 @@ async def delete(ctx:commands.Context,id: str):
 
 
 # on ready start event of warnings and error
-
 @client.event
 async def on_ready():
     print(f'We have logged in as {client.user}')
