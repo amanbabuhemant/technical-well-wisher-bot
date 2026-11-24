@@ -24,6 +24,11 @@ def get_month_index_by_name(month: str) -> int: # 1 based index
             return key
     return 0
 
+def get_month_maxdays_by_index(index: int) -> int:
+    if not 12 >= index >= 1:
+        return 0
+    return MONTH_MAP[index][2]
+
 
 def sanitize_date(date_input: str) -> str | None:
     """
@@ -54,6 +59,10 @@ def sanitize_date(date_input: str) -> str | None:
         month = get_month_index_by_name(month)
     
     if not 12 >= month >= 1:
+        return None
+
+    max_month_days = get_month_maxdays_by_index(month)
+    if not max_month_days >= day >= 1:
         return None
 
     return f"{str(month).zfill(2)}-{str(day).zfill(2)}"
@@ -90,7 +99,6 @@ def sanitize_name(name_input: str) -> str | None:
     if len(name) > 255:
         return None
 
-    print("len:", len(name))
     return name
 
 
